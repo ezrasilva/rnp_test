@@ -65,7 +65,7 @@ docker run --rm "${IMAGE}" cat /usr/share/openran-pqc/components.txt \
     > "${RESULT_DIR}/components.txt"
 
 docker run --rm "${IMAGE}" sh -c '
-    for tool in charon swanctl ip tc tcpdump tshark iperf3 ping sctp_test python3; do
+    for tool in charon swanctl ip tc tcpdump tshark iperf3 ping sctp_test python3 pqc-agent pqc-collector; do
         if [ "$tool" = charon ]; then
             test -x /usr/libexec/ipsec/charon
         else

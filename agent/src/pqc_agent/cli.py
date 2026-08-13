@@ -5,6 +5,7 @@ import argparse
 import csv
 import hashlib
 import json
+import logging
 import os
 import platform
 import re
@@ -15,6 +16,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
 
 SAFE_PROFILE_KEYS = {"MODE", "SCTP_COUNT", "SCTP_RATE", "SCTP_PORT"}
 METRIC_FIELDS = (
@@ -95,7 +97,7 @@ def command_manifest(args: argparse.Namespace) -> None:
         "mode": args.mode,
         "experiment_kind": args.experiment_kind,
         "created_utc": utc_now(),
-        "agent_version": "0.1.0",
+        "agent_version": "0.2.0",
         "host": {
             "kernel": platform.release(),
             "architecture": platform.machine(),
@@ -263,15 +265,49 @@ def parser() -> argparse.ArgumentParser:
     validate = commands.add_parser("validate")
     validate.add_argument("--result-dir", required=True)
     validate.set_defaults(handler=command_validate)
+    distributed = commands.add_parser("run")
+    distributed.add_argument("--node-id", required=True)
+    distributed.add_argument("--run-id", required=True)
+    distributed.add_argument("--mode", default="unknown")
+    destination = distributed.add_mutually_exclusive_group(required=True)
+    destination.add_argument("--collector")
+    destination.add_argument("--offline", action="store_true")
+    distributed.add_argument("--spool-dir", type=Path, default=Path("/var/lib/pqc-agent/spool"))
+    distributed.add_argument("--sample-interval", type=float, default=1.0)
+    distributed.add_argument("--duration", type=float)
+    distributed.add_argument("--test-event")
+    distributed.add_argument("--insecure", action="store_true")
+    distributed.add_argument("--ca", type=Path)
+    distributed.add_argument("--cert", type=Path)
+    distributed.add_argument("--key", type=Path)
+    distributed.set_defaults(handler=command_distributed_run)
     return root
 
 
+def command_distributed_run(args: argparse.Namespace) -> None:
+    from .distributed import PQCExperimentAgent
+    from .run_context import RunContext
+
+    if args.sample_interval < 0.1:
+        raise ValueError("sample interval must be at least 0.1 seconds")
+    if args.collector and not args.insecure and not args.ca:
+        raise ValueError("use --insecure explicitly or provide --ca")
+    agent = PQCExperimentAgent(
+        RunContext(args.run_id, args.node_id, args.mode), args.spool_dir,
+        args.sample_interval, args.collector, args.insecure,
+        args.ca, args.cert, args.key,
+    )
+    agent.run(args.duration, args.test_event)
+
+
 def main() -> None:
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(levelname)s %(name)s %(message)s")
     args = parser().parse_args()
     try:
         args.handler(args)
     except Exception as exc:
-        print(f"pqc-agent: {exc}", file=sys.stderr)
+        logging.getLogger("pqc_agent").error("command failed: %s", exc)
         raise SystemExit(1) from exc
 
 

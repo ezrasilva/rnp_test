@@ -13,6 +13,7 @@ readonly DU="clab-openran-pqc-du"
 readonly AGENT="${PROJECT_DIR}/agent/src/pqc_agent/cli.py"
 readonly IMAGE="openran-pqc:6.0.7"
 readonly EXPERIMENT_KIND="${EXPERIMENT_KIND:-combined}"
+readonly DISTRIBUTED_TELEMETRY="${DISTRIBUTED_TELEMETRY:-0}"
 
 [[ -f "${PROFILE_FILE}" ]] || { printf 'Unknown profile: %s\n' "${PROFILE}" >&2; exit 2; }
 # shellcheck disable=SC1090
@@ -59,6 +60,8 @@ cleanup() {
     if [[ -n "${CAPTURE_PID}" ]]; then
         docker exec "${RIC}" kill -INT "${CAPTURE_PID}" >/dev/null 2>&1 || true
     fi
+    docker exec "${RIC}" pkill -f 'pqc-agent run' >/dev/null 2>&1 || true
+    docker exec "${DU}" pkill -f 'pqc-agent run' >/dev/null 2>&1 || true
     if [[ -n "${SECRET_FILE}" && -f "${SECRET_FILE}" ]]; then
         # The file contains only an ephemeral laboratory PSK and is never copied
         # into results. Removing the explicit mktemp path is safe.
@@ -158,6 +161,16 @@ configure_ipsec() {
 
 containerlab_cleanup
 clab deploy --topo "${TOPOLOGY}" --reconfigure
+
+if [[ "${DISTRIBUTED_TELEMETRY}" = 1 ]]; then
+    printf '\nStarting endpoint-local distributed agents on the management network\n'
+    for endpoint in ric du; do
+        container="clab-openran-pqc-${endpoint}"
+        docker exec --detach "${container}" pqc-agent run \
+            --node-id "${endpoint}" --run-id "${RUN_ID}" --mode "${MODE}" \
+            --collector clab-openran-pqc-collector:50051 --insecure --sample-interval 1.0
+    done
+fi
 
 python3 "${AGENT}" manifest --output "${RESULT_DIR}/manifest.json" \
     --run-id "${RUN_ID}" --mode "${MODE}" --image "${IMAGE}" \

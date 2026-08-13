@@ -8,18 +8,25 @@ topology:
     cap-add:
       - NET_ADMIN
       - NET_RAW
-    binds:
-      - ../traffic:/opt/openran-pqc/traffic:ro
-
   nodes:
     ric:
+      binds:
+        - ../traffic:/opt/openran-pqc/traffic:ro
+        - ../results/spool/ric:/var/lib/pqc-agent/spool
       exec:
         - ip address replace 10.10.0.1/30 dev eth1
         - ip link set eth1 up
     du:
+      binds:
+        - ../traffic:/opt/openran-pqc/traffic:ro
+        - ../results/spool/du:/var/lib/pqc-agent/spool
       exec:
         - ip address replace 10.10.0.2/30 dev eth1
         - ip link set eth1 up
+    collector:
+      cmd: pqc-collector serve --listen 0.0.0.0:50051 --data-dir /var/lib/pqc-collector/runs --insecure
+      binds:
+        - ../results/distributed:/var/lib/pqc-collector/runs
 
   links:
     - endpoints: ["ric:eth1", "du:eth1"]

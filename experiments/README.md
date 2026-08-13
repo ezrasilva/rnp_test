@@ -19,7 +19,10 @@ tratamentos de tráfego (`M1/M2/M3`) são separados dos tratamentos de
 estabelecimento/rekey (`M2/M3`). A campanha pode ser retomada com o mesmo
 `--campaign-id`: execuções aprovadas são verificadas e ignoradas.
 
+Defina `DISTRIBUTED_TELEMETRY=1` para que cada repetição passe o mesmo
+`RUN_ID` e `MODE` aos Agents locais de RIC e DU. Sem a variável, o monitor
+centralizado existente continua sendo usado, preservando campanhas anteriores.
+
 O resumo apresenta mediana, percentis, dispersão, intervalo de confiança
 normal aproximado do piloto e o número recomendado de repetições para a
 precisão relativa declarada. Esses resultados são preliminares e locais.
-

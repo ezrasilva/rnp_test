@@ -54,6 +54,7 @@ RUN apt-get update \
         libssl3 \
         procps \
         python3 \
+        python3-pip \
         tcpdump \
         tshark \
  && rm -rf /var/lib/apt/lists/*
@@ -61,9 +62,14 @@ RUN apt-get update \
 COPY --from=builder /opt/strongswan/ /
 COPY image/entrypoint.sh /usr/local/bin/openran-pqc-entrypoint
 COPY strongswan/strongswan.conf /etc/strongswan.conf
+COPY agent/ /opt/openran-pqc/source/agent/
+COPY collector/ /opt/openran-pqc/source/collector/
 
 RUN chmod 0755 /usr/local/bin/openran-pqc-entrypoint \
  && mkdir -p /run/charon /etc/swanctl/conf.d /var/log/strongswan /usr/share/openran-pqc \
+ && pip3 install --no-cache-dir --break-system-packages \
+        /opt/openran-pqc/source/agent /opt/openran-pqc/source/collector \
+ && rm -rf /opt/openran-pqc/source \
  && { \
       printf 'strongSwan=%s\n' "${STRONGSWAN_VERSION}"; \
       dpkg-query -W -f='${binary:Package}=${Version}\n' | sort; \

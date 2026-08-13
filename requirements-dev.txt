@@ -1,0 +1,4 @@
+-e ./agent
+-e ./collector
+grpcio-tools>=1.74,<2
+

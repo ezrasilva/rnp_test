@@ -20,7 +20,9 @@ ric (10.10.0.1/30) ───── eth1 ───── du (10.10.0.2/30)
 ```
 
 A topologia usa dois containers Linux ligados diretamente pelo Containerlab.
-A rede de gerenciamento permanece separada do enlace experimental `eth1`.
+No laboratório Containerlab, a rede de gerenciamento permanece separada do
+enlace experimental `eth1`. Em um testbed, o caminho até o Collector é definido
+pelo endereço informado ao Agent e pela tabela de roteamento do host.
 
 ## Componentes
 
@@ -133,3 +135,99 @@ Para três ciclos completos do baseline M1:
 sudo ./tests/smoke/run-cycles.sh
 ```
 
+## Distributed Telemetry Architecture
+
+Para operação em hosts ou VMs distintos, cada endpoint executa seu próprio
+Agent e envia eventos e métricas ao endereço configurado em `--collector`:
+
+```text
+                       rede de gerenciamento
+                    +-------------------------+
+                    |  Metrics Collector      |
+                    |  gRPC :50051            |
+                    +-----------+-------------+
+                           /           \
+                     gRPC /             \ gRPC
+                         /               \
+              Agent RIC                   Agent DU
+            VICI/XFRM/CPU              VICI/XFRM/CPU
+                 |                          |
+                 +---- eth1: E2/SCTP -------+
+                       IPsec/ESP M2/M3
+```
+
+Cada mensagem contém `run_id`, `node_id`, timestamp e `sequence_number`.
+Antes do envio ela é persistida em um spool SQLite local. Um ACK cumulativo do
+Collector confirma o recebimento e informa gaps; quedas do Collector não
+interrompem o experimento e os itens pendentes são reenviados após reconexão.
+O Collector deduplica pela chave `run_id + node_id + sequence_number` e salva
+dados em `runs/<run_id>/<node_id>/`.
+
+Instale os comandos em um ambiente virtual:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-dev.txt
+```
+
+Inicie o Collector local sem TLS apenas para desenvolvimento:
+
+```bash
+.venv/bin/pqc-collector serve \
+  --listen 0.0.0.0:50051 \
+  --data-dir ./runs \
+  --insecure
+```
+
+Em terminais separados, inicie os Agents com o mesmo `run_id`:
+
+```bash
+sudo .venv/bin/pqc-agent run --node-id ric --run-id test-m3-001 --mode M3 \
+  --collector 127.0.0.1:50051 --insecure --sample-interval 1.0
+
+sudo .venv/bin/pqc-agent run --node-id du --run-id test-m3-001 --mode M3 \
+  --collector 127.0.0.1:50051 --insecure --sample-interval 1.0
+```
+
+O modo desconectado mantém tudo no spool:
+
+```bash
+sudo .venv/bin/pqc-agent run --node-id ric --run-id test-m3-001 \
+  --mode M3 --offline --sample-interval 1.0
+```
+
+Para habilitar os dois Agents durante uma execução/campanha Containerlab:
+
+```bash
+sudo DISTRIBUTED_TELEMETRY=1 ./experiments/run.sh m3
+```
+
+O nó `collector` participa apenas da rede de gerenciamento padrão do
+Containerlab. O único enlace experimental declarado continua sendo
+`ric:eth1 ↔ du:eth1`, portanto gRPC não atravessa o caminho SCTP/IPsec.
+
+O Agent não contém nomes de interface, topologia ou endereçamento de
+gerenciamento hardcoded. Ele recebe apenas o destino `host:porta`; o roteamento
+do sistema operacional escolhe a interface de saída. Por exemplo, no testbed:
+
+```bash
+sudo .venv/bin/pqc-agent run \
+  --node-id ric \
+  --run-id rnp-e2-m3-001 \
+  --mode M3 \
+  --collector 192.168.50.10:50051 \
+  --insecure
+```
+
+No OpenRAN@Brasil deve ser utilizada a infraestrutura de gerenciamento
+disponibilizada pela RNP. A implementação não pressupõe que essa infraestrutura
+use `eth0`, `management0`, `ens5`, uma sub-rede específica ou a mesma topologia
+do laboratório local.
+
+Produção deve omitir `--insecure`: o Collector aceita `--cert`, `--key` e
+`--ca` para mTLS, e o Agent aceita `--ca`, `--cert` e `--key`. Nenhum
+certificado é hardcoded. PCAPs permanecem locais e nunca trafegam no stream.
+
+O PQC Experiment Agent não implementa ML-KEM, não negocia chaves e não recebe
+material secreto das SAs. Essas funções permanecem no strongSwan/IKEv2 e no
+Linux XFRM.

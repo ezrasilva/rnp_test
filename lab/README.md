@@ -4,6 +4,14 @@ A topologia contém os endpoints `ric` e `du`, ligados diretamente pelas
 interfaces `eth1` (`10.10.0.1/30` e `10.10.0.2/30`). A rede de gerenciamento do
 Containerlab permanece separada e não é usada pelos testes de saúde.
 
+No ambiente local, o nó `collector` é ligado somente à rede de gerenciamento
+automática do Containerlab e escuta gRPC na porta 50051. Ele não possui
+interface no enlace experimental.
+
+Essa rede reproduz localmente a separação prevista, mas não define a topologia
+do testbed. Fora do Containerlab, o Agent conecta ao destino passado em
+`--collector`, e a tabela de roteamento do host escolhe a interface apropriada.
+
 Execute o baseline M1 uma vez:
 
 ```bash

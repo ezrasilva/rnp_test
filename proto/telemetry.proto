@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package pqc.telemetry;
+
+service TelemetryService {
+  rpc StreamTelemetry(stream TelemetryEvent) returns (StreamAck);
+}
+
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  IKE_EVENT = 1;
+  XFRM_METRIC = 2;
+  SYSTEM_METRIC = 3;
+  TRAFFIC_METRIC = 4;
+}
+
+message TelemetryEvent {
+  string run_id = 1;
+  string node_id = 2;
+  int64 timestamp_ns = 3;
+  uint64 sequence_number = 4;
+  EventType type = 5;
+
+  oneof payload {
+    IkeEvent ike = 10;
+    XfrmMetric xfrm = 11;
+    SystemMetric system = 12;
+    TrafficMetric traffic = 13;
+  }
+}
+
+message IkeEvent {
+  string event = 1;
+  string ike_sa_id = 2;
+  string child_sa_id = 3;
+  string proposal = 4;
+  string authentication = 5;
+  double duration_ms = 6;
+}
+
+message XfrmMetric {
+  string spi = 1;
+  uint64 packets = 2;
+  uint64 bytes = 3;
+  uint64 lifetime_seconds = 4;
+  uint64 replay_errors = 5;
+  uint64 integrity_errors = 6;
+  string state = 7;
+}
+
+message SystemMetric {
+  double cpu_percent = 1;
+  uint64 memory_bytes = 2;
+  double charon_cpu_percent = 3;
+  uint64 charon_memory_bytes = 4;
+}
+
+message TrafficMetric {
+  double rtt_ms = 1;
+  double jitter_ms = 2;
+  double throughput_mbps = 3;
+  uint64 packets_lost = 4;
+}
+
+message StreamAck {
+  string node_id = 1;
+  string run_id = 2;
+  uint64 last_sequence_received = 3;
+  repeated uint64 missing_sequences = 4;
+}
+
