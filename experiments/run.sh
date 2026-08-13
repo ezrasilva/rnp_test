@@ -8,6 +8,8 @@ readonly PROFILE="${1:-m1}"
 readonly PROFILE_FILE="${SCRIPT_DIR}/profiles/${PROFILE}.env"
 readonly RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 readonly RESULT_DIR="${PROJECT_DIR}/results/experiments/${RUN_ID}"
+readonly DISTRIBUTED_RESULT_DIR="${PROJECT_DIR}/results/distributed/${RUN_ID}"
+readonly SPOOL_ROOT="${PROJECT_DIR}/results/spool"
 readonly RIC="clab-openran-pqc-ric"
 readonly DU="clab-openran-pqc-du"
 readonly AGENT="${PROJECT_DIR}/agent/src/pqc_agent/cli.py"
@@ -26,7 +28,8 @@ source "${PROFILE_FILE}"
 [[ "${MODE}" != M1 || "${EXPERIMENT_KIND}" != establishment ]] \
     || { printf 'M1 has no IKE establishment experiment\n' >&2; exit 2; }
 
-mkdir -p "${RESULT_DIR}"
+mkdir -p "${RESULT_DIR}" "${PROJECT_DIR}/results/distributed" \
+    "${SPOOL_ROOT}/ric" "${SPOOL_ROOT}/du"
 exec > >(tee "${RESULT_DIR}/run.log") 2>&1
 CAPTURE_PID=""
 SECRET_FILE=""
@@ -53,6 +56,7 @@ containerlab_cleanup() {
 }
 
 cleanup() {
+    local endpoint local_spool
     if [[ -n "${AGENT_PID}" ]]; then
         kill -INT "${AGENT_PID}" >/dev/null 2>&1 || true
         wait "${AGENT_PID}" >/dev/null 2>&1 || true
@@ -68,6 +72,20 @@ cleanup() {
         unlink "${SECRET_FILE}" || true
     fi
     containerlab_cleanup
+    if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" && \
+          -d "${DISTRIBUTED_RESULT_DIR}" ]]; then
+        chown -R "${SUDO_UID}:${SUDO_GID}" "${DISTRIBUTED_RESULT_DIR}"
+        chmod -R u+rwX,go+rX "${DISTRIBUTED_RESULT_DIR}"
+    fi
+    if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" ]]; then
+        for endpoint in ric du; do
+            local_spool="${SPOOL_ROOT}/${endpoint}/${RUN_ID}"
+            if [[ -d "${local_spool}" ]]; then
+                chown -R "${SUDO_UID}:${SUDO_GID}" "${local_spool}"
+                chmod -R u+rwX,go+rX "${local_spool}"
+            fi
+        done
+    fi
 }
 trap cleanup EXIT
 

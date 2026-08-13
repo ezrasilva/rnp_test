@@ -4,7 +4,6 @@
 *.pyc
 *.egg-info
 results
-phase0
 *.pdf
 *.md
 !image/README.md

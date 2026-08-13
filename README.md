@@ -34,7 +34,6 @@ pelo endereço informado ao Agent e pela tabela de roteamento do host.
 - `agent/`: observador de VICI, XFRM, CPU, memória, eventos e artefatos;
 - `experiments/`: perfis, execução individual e campanhas randomizadas;
 - `tests/`: gates de smoke, integração e testes unitários;
-- `phase0/`: gate inicial isolado para diagnosticar suporte XFRM do host.
 
 ## Pré-requisitos
 
@@ -49,6 +48,23 @@ x86-64. Em WSL2, execute primeiro o gate XFRM para confirmar que o kernel
 expõe o dataplane necessário.
 
 ## Construção e validação da imagem
+
+Os fluxos completos estão organizados no `Makefile`. Consulte e execute com:
+
+```bash
+make help
+make setup
+make build
+make test
+make image-validate
+make all-modes
+```
+
+Os alvos `m1`, `m2`, `m3`, `all-modes` e `campaign` habilitam o Collector e os
+Agents gRPC por padrão. `make distributed-all` permanece como alias explícito;
+use `TELEMETRY=0` apenas para executar o monitor centralizado legado. Variáveis
+como `RUN_ID`, `KIND` e `TELEMETRY` podem ser passadas diretamente ao Make; os
+exemplos completos estão em `experiments/README.md`.
 
 ```bash
 ./image/build.sh
