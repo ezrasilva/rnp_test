@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openran-pqc-collector"
-version = "0.1.0"
+version = "0.2.0"
 description = "gRPC telemetry collector for OpenRAN PQC experiments"
 requires-python = ">=3.11"
 dependencies = ["grpcio>=1.74,<2", "protobuf>=6,<7"]
@@ -14,4 +14,3 @@ pqc-collector = "pqc_collector.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-

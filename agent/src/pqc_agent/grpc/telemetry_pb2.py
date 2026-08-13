@@ -24,27 +24,29 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0ftelemetry.proto\x12\rpqc.telemetry\"\xc6\x02\n\x0eTelemetryEvent\x12\x0e\n\x06run_id\x18\x01 \x01(\t\x12\x0f\n\x07node_id\x18\x02 \x01(\t\x12\x14\n\x0ctimestamp_ns\x18\x03 \x01(\x03\x12\x17\n\x0fsequence_number\x18\x04 \x01(\x04\x12&\n\x04type\x18\x05 \x01(\x0e\x32\x18.pqc.telemetry.EventType\x12&\n\x03ike\x18\n \x01(\x0b\x32\x17.pqc.telemetry.IkeEventH\x00\x12)\n\x04xfrm\x18\x0b \x01(\x0b\x32\x19.pqc.telemetry.XfrmMetricH\x00\x12-\n\x06system\x18\x0c \x01(\x0b\x32\x1b.pqc.telemetry.SystemMetricH\x00\x12/\n\x07traffic\x18\r \x01(\x0b\x32\x1c.pqc.telemetry.TrafficMetricH\x00\x42\t\n\x07payload\"\x80\x01\n\x08IkeEvent\x12\r\n\x05\x65vent\x18\x01 \x01(\t\x12\x11\n\tike_sa_id\x18\x02 \x01(\t\x12\x13\n\x0b\x63hild_sa_id\x18\x03 \x01(\t\x12\x10\n\x08proposal\x18\x04 \x01(\t\x12\x16\n\x0e\x61uthentication\x18\x05 \x01(\t\x12\x13\n\x0b\x64uration_ms\x18\x06 \x01(\x01\"\x93\x01\n\nXfrmMetric\x12\x0b\n\x03spi\x18\x01 \x01(\t\x12\x0f\n\x07packets\x18\x02 \x01(\x04\x12\r\n\x05\x62ytes\x18\x03 \x01(\x04\x12\x18\n\x10lifetime_seconds\x18\x04 \x01(\x04\x12\x15\n\rreplay_errors\x18\x05 \x01(\x04\x12\x18\n\x10integrity_errors\x18\x06 \x01(\x04\x12\r\n\x05state\x18\x07 \x01(\t\"r\n\x0cSystemMetric\x12\x13\n\x0b\x63pu_percent\x18\x01 \x01(\x01\x12\x14\n\x0cmemory_bytes\x18\x02 \x01(\x04\x12\x1a\n\x12\x63haron_cpu_percent\x18\x03 \x01(\x01\x12\x1b\n\x13\x63haron_memory_bytes\x18\x04 \x01(\x04\"a\n\rTrafficMetric\x12\x0e\n\x06rtt_ms\x18\x01 \x01(\x01\x12\x11\n\tjitter_ms\x18\x02 \x01(\x01\x12\x17\n\x0fthroughput_mbps\x18\x03 \x01(\x01\x12\x14\n\x0cpackets_lost\x18\x04 \x01(\x04\"g\n\tStreamAck\x12\x0f\n\x07node_id\x18\x01 \x01(\t\x12\x0e\n\x06run_id\x18\x02 \x01(\t\x12\x1e\n\x16last_sequence_received\x18\x03 \x01(\x04\x12\x19\n\x11missing_sequences\x18\x04 \x03(\x04*n\n\tEventType\x12\x1a\n\x16\x45VENT_TYPE_UNSPECIFIED\x10\x00\x12\r\n\tIKE_EVENT\x10\x01\x12\x0f\n\x0bXFRM_METRIC\x10\x02\x12\x11\n\rSYSTEM_METRIC\x10\x03\x12\x12\n\x0eTRAFFIC_METRIC\x10\x04\x32`\n\x10TelemetryService\x12L\n\x0fStreamTelemetry\x12\x1d.pqc.telemetry.TelemetryEvent\x1a\x18.pqc.telemetry.StreamAck(\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0ftelemetry.proto\x12\rpqc.telemetry\"\xfc\x02\n\x0eTelemetryEvent\x12\x0e\n\x06run_id\x18\x01 \x01(\t\x12\x0f\n\x07node_id\x18\x02 \x01(\t\x12\x14\n\x0ctimestamp_ns\x18\x03 \x01(\x03\x12\x17\n\x0fsequence_number\x18\x04 \x01(\x04\x12&\n\x04type\x18\x05 \x01(\x0e\x32\x18.pqc.telemetry.EventType\x12&\n\x03ike\x18\n \x01(\x0b\x32\x17.pqc.telemetry.IkeEventH\x00\x12)\n\x04xfrm\x18\x0b \x01(\x0b\x32\x19.pqc.telemetry.XfrmMetricH\x00\x12-\n\x06system\x18\x0c \x01(\x0b\x32\x1b.pqc.telemetry.SystemMetricH\x00\x12/\n\x07traffic\x18\r \x01(\x0b\x32\x1c.pqc.telemetry.TrafficMetricH\x00\x12\x34\n\rnode_metadata\x18\x0e \x01(\x0b\x32\x1b.pqc.telemetry.NodeMetadataH\x00\x42\t\n\x07payload\"\x80\x01\n\x08IkeEvent\x12\r\n\x05\x65vent\x18\x01 \x01(\t\x12\x11\n\tike_sa_id\x18\x02 \x01(\t\x12\x13\n\x0b\x63hild_sa_id\x18\x03 \x01(\t\x12\x10\n\x08proposal\x18\x04 \x01(\t\x12\x16\n\x0e\x61uthentication\x18\x05 \x01(\t\x12\x13\n\x0b\x64uration_ms\x18\x06 \x01(\x01\"\x93\x01\n\nXfrmMetric\x12\x0b\n\x03spi\x18\x01 \x01(\t\x12\x0f\n\x07packets\x18\x02 \x01(\x04\x12\r\n\x05\x62ytes\x18\x03 \x01(\x04\x12\x18\n\x10lifetime_seconds\x18\x04 \x01(\x04\x12\x15\n\rreplay_errors\x18\x05 \x01(\x04\x12\x18\n\x10integrity_errors\x18\x06 \x01(\x04\x12\r\n\x05state\x18\x07 \x01(\t\"\xa9\x01\n\x0cSystemMetric\x12\x13\n\x0b\x63pu_percent\x18\x01 \x01(\x01\x12\x14\n\x0cmemory_bytes\x18\x02 \x01(\x04\x12\x1a\n\x12\x63haron_cpu_percent\x18\x03 \x01(\x01\x12\x1b\n\x13\x63haron_memory_bytes\x18\x04 \x01(\x04\x12\x19\n\x11\x61gent_cpu_percent\x18\x05 \x01(\x01\x12\x1a\n\x12\x61gent_memory_bytes\x18\x06 \x01(\x04\"\xa3\x01\n\x0cNodeMetadata\x12\x0c\n\x04mode\x18\x01 \x01(\t\x12\x16\n\x0ekernel_version\x18\x02 \x01(\t\x12\x15\n\ragent_version\x18\x03 \x01(\t\x12\x1a\n\x12strongswan_version\x18\x04 \x01(\t\x12\x1f\n\x17sample_interval_seconds\x18\x05 \x01(\x01\x12\x19\n\x11\x63ollector_enabled\x18\x06 \x01(\x08\"a\n\rTrafficMetric\x12\x0e\n\x06rtt_ms\x18\x01 \x01(\x01\x12\x11\n\tjitter_ms\x18\x02 \x01(\x01\x12\x17\n\x0fthroughput_mbps\x18\x03 \x01(\x01\x12\x14\n\x0cpackets_lost\x18\x04 \x01(\x04\"g\n\tStreamAck\x12\x0f\n\x07node_id\x18\x01 \x01(\t\x12\x0e\n\x06run_id\x18\x02 \x01(\t\x12\x1e\n\x16last_sequence_received\x18\x03 \x01(\x04\x12\x19\n\x11missing_sequences\x18\x04 \x03(\x04*\x81\x01\n\tEventType\x12\x1a\n\x16\x45VENT_TYPE_UNSPECIFIED\x10\x00\x12\r\n\tIKE_EVENT\x10\x01\x12\x0f\n\x0bXFRM_METRIC\x10\x02\x12\x11\n\rSYSTEM_METRIC\x10\x03\x12\x12\n\x0eTRAFFIC_METRIC\x10\x04\x12\x11\n\rNODE_METADATA\x10\x05\x32`\n\x10TelemetryService\x12L\n\x0fStreamTelemetry\x12\x1d.pqc.telemetry.TelemetryEvent\x1a\x18.pqc.telemetry.StreamAck(\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'telemetry_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_EVENTTYPE']._serialized_start=964
-  _globals['_EVENTTYPE']._serialized_end=1074
+  _globals['_EVENTTYPE']._serialized_start=1241
+  _globals['_EVENTTYPE']._serialized_end=1370
   _globals['_TELEMETRYEVENT']._serialized_start=35
-  _globals['_TELEMETRYEVENT']._serialized_end=361
-  _globals['_IKEEVENT']._serialized_start=364
-  _globals['_IKEEVENT']._serialized_end=492
-  _globals['_XFRMMETRIC']._serialized_start=495
-  _globals['_XFRMMETRIC']._serialized_end=642
-  _globals['_SYSTEMMETRIC']._serialized_start=644
-  _globals['_SYSTEMMETRIC']._serialized_end=758
-  _globals['_TRAFFICMETRIC']._serialized_start=760
-  _globals['_TRAFFICMETRIC']._serialized_end=857
-  _globals['_STREAMACK']._serialized_start=859
-  _globals['_STREAMACK']._serialized_end=962
-  _globals['_TELEMETRYSERVICE']._serialized_start=1076
-  _globals['_TELEMETRYSERVICE']._serialized_end=1172
+  _globals['_TELEMETRYEVENT']._serialized_end=415
+  _globals['_IKEEVENT']._serialized_start=418
+  _globals['_IKEEVENT']._serialized_end=546
+  _globals['_XFRMMETRIC']._serialized_start=549
+  _globals['_XFRMMETRIC']._serialized_end=696
+  _globals['_SYSTEMMETRIC']._serialized_start=699
+  _globals['_SYSTEMMETRIC']._serialized_end=868
+  _globals['_NODEMETADATA']._serialized_start=871
+  _globals['_NODEMETADATA']._serialized_end=1034
+  _globals['_TRAFFICMETRIC']._serialized_start=1036
+  _globals['_TRAFFICMETRIC']._serialized_end=1133
+  _globals['_STREAMACK']._serialized_start=1135
+  _globals['_STREAMACK']._serialized_end=1238
+  _globals['_TELEMETRYSERVICE']._serialized_start=1372
+  _globals['_TELEMETRYSERVICE']._serialized_end=1468
 # @@protoc_insertion_point(module_scope)

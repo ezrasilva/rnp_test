@@ -10,7 +10,8 @@ RUN_ID="${TEST_RUN_ID}" "${PROJECT_DIR}/experiments/run.sh" m3
 
 jq -e '.status == "pass" and .mode == "M3" and
        .cleartext_sctp_packets == 0 and .esp_packets > 0 and .xfrm_packets > 0 and
-       .ike_packets > 0 and .ike_intermediate_packets > 0' \
+       .ike_packets > 0 and .ike_intermediate_packets > 0 and
+       .grpc_packets_on_experimental_link == 0' \
     "${RESULT_DIR}/summary.json" >/dev/null
 grep -Eqi 'ML.?KEM.?768' "${RESULT_DIR}/ric-sas.txt"
 grep -Eqi 'IKE_INTERMEDIATE' "${RESULT_DIR}/ric-charon.log"

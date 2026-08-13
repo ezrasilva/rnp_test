@@ -36,18 +36,20 @@ class TelemetryStorage:
                 }
                 with (node_dir / "telemetry.jsonl").open("a") as stream:
                     stream.write(json.dumps(record, separators=(",", ":"), sort_keys=True) + "\n")
-                target = "events.jsonl" if event.type == 1 else "metrics.csv"
-                if target.endswith("jsonl"):
+                target = ("events.jsonl" if event.type == 1 else
+                          None if event.type == 5 else "metrics.csv")
+                if target and target.endswith("jsonl"):
                     with (node_dir / target).open("a") as stream:
                         stream.write(json.dumps(record, separators=(",", ":"), sort_keys=True) + "\n")
-                else:
+                elif target:
                     path = node_dir / target
                     with path.open("a", newline="") as stream:
                         writer = csv.DictWriter(stream, fieldnames=record.keys())
                         if path.stat().st_size == 0:
                             writer.writeheader()
                         writer.writerow(record)
-                self._update_manifest(run_dir, event.run_id, event.node_id)
+                self._update_manifest(run_dir, event.run_id, event.node_id,
+                                      payload.get("node_metadata"))
             sequences = [row[0] for row in self.db.execute(
                 "SELECT sequence FROM received WHERE run_id=? AND node_id=? ORDER BY sequence",
                 (event.run_id, event.node_id))]
@@ -56,7 +58,8 @@ class TelemetryStorage:
             self._update_summary(run_dir, event.run_id)
             return inserted, last, missing
 
-    def _update_manifest(self, run_dir: Path, run_id: str, node_id: str) -> None:
+    def _update_manifest(self, run_dir: Path, run_id: str, node_id: str,
+                         metadata: dict[str, Any] | None = None) -> None:
         path = run_dir / "manifest.json"
         manifest = json.loads(path.read_text()) if path.exists() else {
             "run_id": run_id, "start_time": datetime.now(timezone.utc).isoformat(),
@@ -67,6 +70,21 @@ class TelemetryStorage:
         if node_id not in manifest["nodes"]:
             manifest["nodes"].append(node_id)
             manifest["nodes"].sort()
+        if metadata:
+            mode = metadata.get("mode")
+            if mode and manifest["mode"] not in ("unknown", mode):
+                raise ValueError("nodes reported inconsistent experiment modes")
+            manifest["mode"] = mode or manifest["mode"]
+            manifest["kernel_versions"][node_id] = metadata.get("kernel_version", "")
+            manifest["agent_versions"][node_id] = metadata.get("agent_version", "")
+            version = metadata.get("strongswan_version")
+            if version:
+                manifest["strongswan_version"] = version
+            interval = metadata.get("sample_interval_seconds")
+            if interval is not None:
+                manifest["sample_interval_seconds"] = interval
+            manifest.setdefault("collector_enabled", {})[node_id] = metadata.get(
+                "collector_enabled", False)
         path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
 
     def _update_summary(self, run_dir: Path, run_id: str) -> None:

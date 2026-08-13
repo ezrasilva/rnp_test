@@ -269,6 +269,10 @@ ESP_PACKETS="$(docker exec "${RIC}" tshark -r /tmp/experiment.pcap -Y esp -T fie
 IKE_PACKETS="$(docker exec "${RIC}" tshark -r /tmp/experiment.pcap -Y isakmp -T fields -e isakmp.exchangetype 2>/dev/null | wc -l)"
 IKE_INTERMEDIATE_PACKETS="$(docker exec "${RIC}" tshark -r /tmp/experiment.pcap \
     -Y 'isakmp.exchangetype == 43' -T fields -e isakmp.exchangetype 2>/dev/null | wc -l)"
+GRPC_PACKETS="$(docker exec "${RIC}" tshark -r /tmp/experiment.pcap \
+    -Y 'tcp.port == 50051' -T fields -e tcp.port 2>/dev/null | wc -l)"
+[[ "${GRPC_PACKETS}" -eq 0 ]] \
+    || fail "gRPC collector traffic crossed the experimental eth1 link"
 MLKEM_EXCHANGE_NS=null
 if [[ "${MODE}" = M3 ]]; then
     MLKEM_EXCHANGE_NS="$(docker exec "${RIC}" tshark -r /tmp/experiment.pcap \
@@ -331,11 +335,13 @@ jq -n --arg run_id "${RUN_ID}" --arg mode "${MODE}" \
     --argjson sctp_packets "${SCTP_PACKETS}" --argjson esp_packets "${ESP_PACKETS}" \
     --argjson xfrm_packets "${XFRM_PACKETS}" --argjson ike_packets "${IKE_PACKETS}" \
     --argjson ike_intermediate_packets "${IKE_INTERMEDIATE_PACKETS}" \
+    --argjson grpc_packets_on_experimental_link "${GRPC_PACKETS}" \
     --argjson mlkem_exchange_ns "${MLKEM_EXCHANGE_NS}" \
     '{run_id:$run_id, mode:$mode, experiment_kind:$experiment_kind,
       status:"pass", cleartext_sctp_packets:$sctp_packets,
       esp_packets:$esp_packets, xfrm_packets:$xfrm_packets,
       ike_packets:$ike_packets, ike_intermediate_packets:$ike_intermediate_packets,
+      grpc_packets_on_experimental_link:$grpc_packets_on_experimental_link,
       mlkem_exchange_ns:$mlkem_exchange_ns,
       xfrm_states:(if $mode == "M1" then 0 else 2 end),
       xfrm_policies:(if $mode == "M1" then 0 else 2 end)}' > "${RESULT_DIR}/summary.json"

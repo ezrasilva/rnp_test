@@ -51,6 +51,8 @@ class EventCollector:
             cpu_percent=system.cpu_percent, memory_bytes=system.memory_bytes,
             charon_cpu_percent=system.charon_cpu_percent,
             charon_memory_bytes=system.charon_memory_bytes,
+            agent_cpu_percent=system.agent_cpu_percent,
+            agent_memory_bytes=system.agent_memory_bytes,
         ))
         sequences.append(self._persist(event))
         for state in self.xfrm.collect():
@@ -64,6 +66,17 @@ class EventCollector:
             sequences.append(self._persist(event))
         return sequences
 
+    def emit_node_metadata(self, *, mode: str, kernel_version: str,
+                           agent_version: str, strongswan_version: str,
+                           sample_interval: float, collector_enabled: bool) -> int:
+        event = self.base(telemetry_pb2.NODE_METADATA)
+        event.node_metadata.CopyFrom(telemetry_pb2.NodeMetadata(
+            mode=mode, kernel_version=kernel_version, agent_version=agent_version,
+            strongswan_version=strongswan_version,
+            sample_interval_seconds=sample_interval,
+            collector_enabled=collector_enabled,
+        ))
+        return self._persist(event)
+
     def emit_test_event(self, name: str) -> int:
         return self.emit_ike(IkeObservation(name))
-

@@ -4,6 +4,7 @@ import json
 import logging
 import platform
 import signal
+import subprocess
 import threading
 import time
 from pathlib import Path
@@ -39,8 +40,23 @@ class PQCExperimentAgent:
             "agent_enabled": True, "collector_enabled": self.client is not None,
         }, indent=2) + "\n")
 
+    @staticmethod
+    def strongswan_version() -> str:
+        try:
+            result = subprocess.run(["swanctl", "--version"], text=True,
+                                    capture_output=True, check=False, timeout=2)
+            match = next((word for word in result.stdout.split() if word[0:1].isdigit()), "")
+            return match
+        except (OSError, subprocess.SubprocessError):
+            return ""
+
     def run(self, duration: float | None = None, test_event: str | None = None) -> None:
         self.write_local_manifest()
+        self.collectors.emit_node_metadata(
+            mode=self.context.mode, kernel_version=platform.release(),
+            agent_version=__version__, strongswan_version=self.strongswan_version(),
+            sample_interval=self.interval, collector_enabled=self.client is not None,
+        )
         for signum in (signal.SIGINT, signal.SIGTERM):
             signal.signal(signum, lambda *_: self.stop.set())
         sender = None
@@ -67,4 +83,3 @@ class PQCExperimentAgent:
         if sender:
             sender.join(timeout=2)
         self.spool.close()
-

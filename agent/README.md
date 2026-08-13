@@ -4,6 +4,10 @@ O agente é executado localmente em cada endpoint. Ele observa `swanctl` (VICI),
 `ip -s xfrm` e CPU/RAM, persiste tudo no spool e envia lotes ao Collector gRPC.
 Ele não acessa outros nós nem controla containers remotamente.
 
+Na inicialização, o Agent envia `NODE_METADATA` para preencher o manifesto
+central. Cada amostra de sistema inclui também CPU e RSS do próprio processo
+`pqc-agent`, permitindo quantificar o observer effect.
+
 Para executar e validar formalmente uma execução autossuficiente (M3 por
 padrão, ou `m1`/`m2` como argumento):
 

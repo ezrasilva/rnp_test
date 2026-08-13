@@ -171,6 +171,9 @@ Agent e envia eventos e métricas ao endereço configurado em `--collector`:
 ```
 
 Cada mensagem contém `run_id`, `node_id`, timestamp e `sequence_number`.
+Ao iniciar, cada Agent envia uma mensagem `NODE_METADATA` com modo, versões do
+kernel, Agent e strongSwan, intervalo de amostragem e estado do Collector. O
+Collector usa essa mensagem para preencher o `manifest.json` central.
 Antes do envio ela é persistida em um spool SQLite local. O Agent abre streams
 client-streaming em lotes; ao terminar cada lote, recebe um ACK cumulativo que
 confirma o recebimento e informa gaps. O RPC não envia ACK por mensagem nem é
@@ -221,6 +224,8 @@ make m3
 O nó `collector` participa apenas da rede de gerenciamento padrão do
 Containerlab. O único enlace experimental declarado continua sendo
 `ric:eth1 ↔ du:eth1`, portanto gRPC não atravessa o caminho SCTP/IPsec.
+Como gate runtime, o PCAP capturado em `eth1` é filtrado por `tcp.port == 50051`;
+qualquer pacote encontrado reprova a execução.
 
 O Agent não contém nomes de interface, topologia ou endereçamento de
 gerenciamento hardcoded. Ele recebe apenas o destino `host:porta`; o roteamento
