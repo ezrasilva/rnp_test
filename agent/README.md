@@ -1,17 +1,8 @@
 # PQC Experiment Agent
 
-O agente observa o experimento sem implementar criptografia. Ele usa `swanctl`
-(VICI), `ip -s xfrm`, estatísticas do runtime e os eventos da aplicação para
-produzir `manifest.json`, `events.jsonl`, `metrics.csv` e métricas derivadas no
-`summary.json`.
-
-O runner principal inicia o monitor automaticamente:
-
-```bash
-sudo ./experiments/run.sh m1
-sudo ./experiments/run.sh m2
-sudo ./experiments/run.sh m3
-```
+O agente é executado localmente em cada endpoint. Ele observa `swanctl` (VICI),
+`ip -s xfrm` e CPU/RAM, persiste tudo no spool e envia lotes ao Collector gRPC.
+Ele não acessa outros nós nem controla containers remotamente.
 
 Para executar e validar formalmente uma execução autossuficiente (M3 por
 padrão, ou `m1`/`m2` como argumento):
@@ -29,7 +20,7 @@ python3 -m unittest discover -s agent/tests
 ## Agente distribuído
 
 ```bash
-pqc-agent run --node-id ric --run-id run-001 --mode M3 \
+pqc-agent --node-id ric --run-id run-001 --mode M3 \
   --collector collector.example:50051 --ca ca.pem --cert ric.pem --key ric.key
 ```
 
@@ -48,4 +39,4 @@ Eventos observáveis nesta versão:
 
 Os timestamps internos de fases IKE não são inventados. Enquanto não houver
 uma assinatura VICI/log confiável para eles no daemon, permanecem não
-suportados pelo comando distribuído.
+suportados pelo Agent.

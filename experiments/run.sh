@@ -12,10 +12,9 @@ readonly DISTRIBUTED_RESULT_DIR="${PROJECT_DIR}/results/distributed/${RUN_ID}"
 readonly SPOOL_ROOT="${PROJECT_DIR}/results/spool"
 readonly RIC="clab-openran-pqc-ric"
 readonly DU="clab-openran-pqc-du"
-readonly AGENT="${PROJECT_DIR}/agent/src/pqc_agent/cli.py"
+readonly ARTIFACTS="${PROJECT_DIR}/experiments/artifacts.py"
 readonly IMAGE="openran-pqc:6.0.7"
 readonly EXPERIMENT_KIND="${EXPERIMENT_KIND:-combined}"
-readonly DISTRIBUTED_TELEMETRY="${DISTRIBUTED_TELEMETRY:-0}"
 
 [[ -f "${PROFILE_FILE}" ]] || { printf 'Unknown profile: %s\n' "${PROFILE}" >&2; exit 2; }
 # shellcheck disable=SC1090
@@ -33,7 +32,6 @@ mkdir -p "${RESULT_DIR}" "${PROJECT_DIR}/results/distributed" \
 exec > >(tee "${RESULT_DIR}/run.log") 2>&1
 CAPTURE_PID=""
 SECRET_FILE=""
-AGENT_PID=""
 
 fail() { printf 'FAIL: %s\n' "$*"; exit 1; }
 
@@ -57,15 +55,11 @@ containerlab_cleanup() {
 
 cleanup() {
     local endpoint local_spool
-    if [[ -n "${AGENT_PID}" ]]; then
-        kill -INT "${AGENT_PID}" >/dev/null 2>&1 || true
-        wait "${AGENT_PID}" >/dev/null 2>&1 || true
-    fi
     if [[ -n "${CAPTURE_PID}" ]]; then
         docker exec "${RIC}" kill -INT "${CAPTURE_PID}" >/dev/null 2>&1 || true
     fi
-    docker exec "${RIC}" pkill -f 'pqc-agent run' >/dev/null 2>&1 || true
-    docker exec "${DU}" pkill -f 'pqc-agent run' >/dev/null 2>&1 || true
+    docker exec "${RIC}" pkill -f 'pqc-agent' >/dev/null 2>&1 || true
+    docker exec "${DU}" pkill -f 'pqc-agent' >/dev/null 2>&1 || true
     if [[ -n "${SECRET_FILE}" && -f "${SECRET_FILE}" ]]; then
         # The file contains only an ephemeral laboratory PSK and is never copied
         # into results. Removing the explicit mktemp path is safe.
@@ -91,18 +85,10 @@ trap cleanup EXIT
 
 agent_event() {
     if [[ -n "${2:-}" ]]; then
-        python3 "${AGENT}" event --output "${RESULT_DIR}/events.jsonl" \
+        python3 "${ARTIFACTS}" event --output "${RESULT_DIR}/events.jsonl" \
             --name "$1" --endpoint "$2"
     else
-        python3 "${AGENT}" event --output "${RESULT_DIR}/events.jsonl" --name "$1"
-    fi
-}
-
-stop_agent() {
-    if [[ -n "${AGENT_PID}" ]]; then
-        kill -INT "${AGENT_PID}"
-        wait "${AGENT_PID}"
-        AGENT_PID=""
+        python3 "${ARTIFACTS}" event --output "${RESULT_DIR}/events.jsonl" --name "$1"
     fi
 }
 
@@ -180,25 +166,19 @@ configure_ipsec() {
 containerlab_cleanup
 clab deploy --topo "${TOPOLOGY}" --reconfigure
 
-if [[ "${DISTRIBUTED_TELEMETRY}" = 1 ]]; then
-    printf '\nStarting endpoint-local distributed agents on the management network\n'
-    for endpoint in ric du; do
-        container="clab-openran-pqc-${endpoint}"
-        docker exec --detach "${container}" pqc-agent run \
-            --node-id "${endpoint}" --run-id "${RUN_ID}" --mode "${MODE}" \
-            --collector clab-openran-pqc-collector:50051 --insecure --sample-interval 1.0
-    done
-fi
+printf '\nStarting endpoint-local agents on the management network\n'
+for endpoint in ric du; do
+    container="clab-openran-pqc-${endpoint}"
+    docker exec --detach "${container}" pqc-agent \
+        --node-id "${endpoint}" --run-id "${RUN_ID}" --mode "${MODE}" \
+        --collector clab-openran-pqc-collector:50051 --insecure --sample-interval 1.0
+done
 
-python3 "${AGENT}" manifest --output "${RESULT_DIR}/manifest.json" \
+python3 "${ARTIFACTS}" manifest --output "${RESULT_DIR}/manifest.json" \
     --run-id "${RUN_ID}" --mode "${MODE}" --image "${IMAGE}" \
     --experiment-kind "${EXPERIMENT_KIND}" \
-    --topology "${TOPOLOGY}" --profile "${PROFILE_FILE}" \
-    --container "${RIC}" --container "${DU}"
+    --topology "${TOPOLOGY}" --profile "${PROFILE_FILE}"
 agent_event lab_deployed
-python3 "${AGENT}" monitor --output "${RESULT_DIR}/metrics.csv" --interval 0.5 \
-    --container "${RIC}" --container "${DU}" 2>"${RESULT_DIR}/agent.log" &
-AGENT_PID=$!
 
 printf '\nChecking experimental-link health\n'
 for endpoint in "${RIC}" "${DU}"; do
@@ -346,8 +326,6 @@ else
     fi
 fi
 
-stop_agent
-
 jq -n --arg run_id "${RUN_ID}" --arg mode "${MODE}" \
     --arg experiment_kind "${EXPERIMENT_KIND}" \
     --argjson sctp_packets "${SCTP_PACKETS}" --argjson esp_packets "${ESP_PACKETS}" \
@@ -363,8 +341,13 @@ jq -n --arg run_id "${RUN_ID}" --arg mode "${MODE}" \
       xfrm_policies:(if $mode == "M1" then 0 else 2 end)}' > "${RESULT_DIR}/summary.json"
 
 agent_event run_complete
-python3 "${AGENT}" finalize --result-dir "${RESULT_DIR}"
-python3 "${AGENT}" validate --result-dir "${RESULT_DIR}"
+docker exec "${RIC}" pkill -INT -f 'pqc-agent' >/dev/null 2>&1 || true
+docker exec "${DU}" pkill -INT -f 'pqc-agent' >/dev/null 2>&1 || true
+sleep 1
+python3 "${ARTIFACTS}" finalize --result-dir "${RESULT_DIR}" \
+    --telemetry-dir "${DISTRIBUTED_RESULT_DIR}"
+python3 "${ARTIFACTS}" validate --result-dir "${RESULT_DIR}" \
+    --telemetry-dir "${DISTRIBUTED_RESULT_DIR}"
 
 printf '\nPASS: %s met its negotiation and dataplane acceptance criteria.\n' "${MODE}"
 printf 'Evidence: %s\n' "${RESULT_DIR}"

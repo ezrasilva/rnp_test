@@ -21,23 +21,21 @@ make m1
 make m2
 make m3
 make cycles
-make distributed-all
 ```
 
 É possível controlar uma execução sem editar scripts:
 
 ```bash
-make m3 RUN_ID=rnp-e2-m3-001 KIND=combined TELEMETRY=1
+make m3 RUN_ID=rnp-e2-m3-001 KIND=combined
 ```
 
-Em `all-modes` ou `distributed-all`, um `RUN_ID=ensaio-001` informado pelo
+Em `all-modes`, um `RUN_ID=ensaio-001` informado pelo
 usuário gera `ensaio-001-m1`, `ensaio-001-m2` e `ensaio-001-m3`, evitando que
 os artefatos dos modos compartilhem a mesma pasta.
 
 `KIND` aceita `combined`, `steady` ou `establishment` (este último não se aplica
-ao M1). Nos alvos Make, o Collector e os Agents distribuídos no RIC e DU são
-habilitados por padrão. Use `TELEMETRY=0` somente para reproduzir o fluxo
-centralizado legado.
+ao M1). O Collector e os Agents distribuídos no RIC e DU fazem parte de todas
+as execuções; não existe caminho de monitoramento centralizado alternativo.
 
 Para planejar, executar ou retomar uma campanha:
 
@@ -69,9 +67,7 @@ tratamentos de tráfego (`M1/M2/M3`) são separados dos tratamentos de
 estabelecimento/rekey (`M2/M3`). A campanha pode ser retomada com o mesmo
 `--campaign-id`: execuções aprovadas são verificadas e ignoradas.
 
-Defina `DISTRIBUTED_TELEMETRY=1` para que cada repetição passe o mesmo
-`RUN_ID` e `MODE` aos Agents locais de RIC e DU. Sem a variável, o monitor
-centralizado existente continua sendo usado, preservando campanhas anteriores.
+Cada repetição passa o mesmo `RUN_ID` e `MODE` aos Agents locais de RIC e DU.
 
 O resumo apresenta mediana, percentis, dispersão, intervalo de confiança
 normal aproximado do piloto e o número recomendado de repetições para a

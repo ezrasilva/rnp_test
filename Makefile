@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
-.NOTPARALLEL: m1 m2 m3 all-modes distributed-all cycles campaign
+.NOTPARALLEL: m1 m2 m3 all-modes cycles campaign
 
 VENV ?= .venv
 PYTHON := $(VENV)/bin/python
@@ -9,13 +9,12 @@ VENV_STAMP := $(VENV)/.openran-pqc-installed
 SUDO ?= sudo
 RUN_ID ?=
 KIND ?= combined
-TELEMETRY ?= 1
 REPS ?= 10
 SEED ?= 20260813
 PRECISION ?= 0.10
 CAMPAIGN_ID ?=
 
-RUN_ENV = RUN_ID='$(RUN_ID)' EXPERIMENT_KIND='$(KIND)' DISTRIBUTED_TELEMETRY='$(TELEMETRY)'
+RUN_ENV = RUN_ID='$(RUN_ID)' EXPERIMENT_KIND='$(KIND)'
 CAMPAIGN_ARGS = --repetitions '$(REPS)' --seed '$(SEED)' --relative-precision '$(PRECISION)'
 ifneq ($(strip $(CAMPAIGN_ID)),)
 CAMPAIGN_ARGS += --campaign-id '$(CAMPAIGN_ID)'
@@ -23,7 +22,7 @@ endif
 
 .PHONY: help setup preflight build image-validate test test-unit test-grpc \
 	m1 m2 m3 all-modes cycles agent-m1 agent-m2 agent-m3 \
-	campaign campaign-plan distributed-all
+	campaign campaign-plan
 
 help: ## Mostra os alvos e as variáveis disponíveis
 	@printf '%s\n' \
@@ -40,17 +39,15 @@ help: ## Mostra os alvos e as variáveis disponíveis
 	  '  make m2                integração PSK + X25519 + ESP' \
 	  '  make m3                integração X25519 + ML-KEM-768 + ESP' \
 	  '  make all-modes         executa M1, M2 e M3 em sequência' \
-	  '  make distributed-all   alias explícito de all-modes com gRPC' \
 	  '  make cycles            executa os três ciclos completos de M1' \
 	  '' \
 	  'Campanha:' \
 	  '  make campaign-plan     grava a agenda sem executar' \
 	  '  make campaign          executa/retoma a campanha randomizada' \
 	  '' \
-	  'Variáveis (exemplo: make m3 TELEMETRY=1 KIND=steady):' \
+	  'Variáveis (exemplo: make m3 KIND=steady):' \
 	  '  RUN_ID=<id>            identificador da execução individual' \
 	  '  KIND=combined|steady|establishment' \
-	  '  TELEMETRY=1|0          gRPC ligado por padrão; use 0 para desabilitar' \
 	  '  REPS=10 SEED=20260813 PRECISION=0.10 CAMPAIGN_ID=<id>' \
 	  '  SUDO=sudo              comando de elevação; use SUDO= se já for root'
 
@@ -100,18 +97,14 @@ m3: preflight ## Executa e valida o experimento completo M3
 
 all-modes: preflight ## Executa M1, M2 e M3 em sequência
 	$(MAKE) m1 RUN_ID='$(if $(strip $(RUN_ID)),$(RUN_ID)-m1,)' \
-		KIND='$(KIND)' TELEMETRY='$(TELEMETRY)' SUDO='$(SUDO)'
+		KIND='$(KIND)' SUDO='$(SUDO)'
 	$(MAKE) m2 RUN_ID='$(if $(strip $(RUN_ID)),$(RUN_ID)-m2,)' \
-		KIND='$(KIND)' TELEMETRY='$(TELEMETRY)' SUDO='$(SUDO)'
+		KIND='$(KIND)' SUDO='$(SUDO)'
 	$(MAKE) m3 RUN_ID='$(if $(strip $(RUN_ID)),$(RUN_ID)-m3,)' \
-		KIND='$(KIND)' TELEMETRY='$(TELEMETRY)' SUDO='$(SUDO)'
-
-distributed-all: ## Executa M1, M2 e M3 com telemetria distribuída
-	$(MAKE) all-modes TELEMETRY=1 KIND='$(KIND)' SUDO='$(SUDO)'
+		KIND='$(KIND)' SUDO='$(SUDO)'
 
 cycles: preflight ## Executa os três ciclos completos do gate M1
-	$(SUDO) env DISTRIBUTED_TELEMETRY='$(TELEMETRY)' \
-		CAMPAIGN_ID='$(CAMPAIGN_ID)' ./tests/smoke/run-cycles.sh
+	$(SUDO) env CAMPAIGN_ID='$(CAMPAIGN_ID)' ./tests/smoke/run-cycles.sh
 
 agent-m1: preflight ## Valida artefatos do Agent numa execução M1
 	$(SUDO) env $(RUN_ENV) ./tests/integration/run-agent.sh m1
@@ -126,5 +119,4 @@ campaign-plan: setup ## Cria/mostra a agenda randomizada, sem executar
 	'$(PYTHON)' ./experiments/campaign.py $(CAMPAIGN_ARGS) --plan-only
 
 campaign: preflight ## Executa ou retoma a campanha completa
-	$(SUDO) env DISTRIBUTED_TELEMETRY='$(TELEMETRY)' \
-		'$(PYTHON)' ./experiments/campaign.py $(CAMPAIGN_ARGS)
+	$(SUDO) '$(PYTHON)' ./experiments/campaign.py $(CAMPAIGN_ARGS)

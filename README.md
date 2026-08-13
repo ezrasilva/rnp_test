@@ -60,11 +60,9 @@ make image-validate
 make all-modes
 ```
 
-Os alvos `m1`, `m2`, `m3`, `all-modes` e `campaign` habilitam o Collector e os
-Agents gRPC por padrão. `make distributed-all` permanece como alias explícito;
-use `TELEMETRY=0` apenas para executar o monitor centralizado legado. Variáveis
-como `RUN_ID`, `KIND` e `TELEMETRY` podem ser passadas diretamente ao Make; os
-exemplos completos estão em `experiments/README.md`.
+Os alvos `m1`, `m2`, `m3`, `all-modes` e `campaign` sempre usam o Collector e
+os Agents gRPC. Variáveis como `RUN_ID` e `KIND` podem ser passadas diretamente
+ao Make; os exemplos completos estão em `experiments/README.md`.
 
 ```bash
 ./image/build.sh
@@ -173,8 +171,10 @@ Agent e envia eventos e métricas ao endereço configurado em `--collector`:
 ```
 
 Cada mensagem contém `run_id`, `node_id`, timestamp e `sequence_number`.
-Antes do envio ela é persistida em um spool SQLite local. Um ACK cumulativo do
-Collector confirma o recebimento e informa gaps; quedas do Collector não
+Antes do envio ela é persistida em um spool SQLite local. O Agent abre streams
+client-streaming em lotes; ao terminar cada lote, recebe um ACK cumulativo que
+confirma o recebimento e informa gaps. O RPC não envia ACK por mensagem nem é
+bidirecional. Quedas do Collector não
 interrompem o experimento e os itens pendentes são reenviados após reconexão.
 O Collector deduplica pela chave `run_id + node_id + sequence_number` e salva
 dados em `runs/<run_id>/<node_id>/`.
@@ -198,24 +198,24 @@ Inicie o Collector local sem TLS apenas para desenvolvimento:
 Em terminais separados, inicie os Agents com o mesmo `run_id`:
 
 ```bash
-sudo .venv/bin/pqc-agent run --node-id ric --run-id test-m3-001 --mode M3 \
+sudo .venv/bin/pqc-agent --node-id ric --run-id test-m3-001 --mode M3 \
   --collector 127.0.0.1:50051 --insecure --sample-interval 1.0
 
-sudo .venv/bin/pqc-agent run --node-id du --run-id test-m3-001 --mode M3 \
+sudo .venv/bin/pqc-agent --node-id du --run-id test-m3-001 --mode M3 \
   --collector 127.0.0.1:50051 --insecure --sample-interval 1.0
 ```
 
 O modo desconectado mantém tudo no spool:
 
 ```bash
-sudo .venv/bin/pqc-agent run --node-id ric --run-id test-m3-001 \
+sudo .venv/bin/pqc-agent --node-id ric --run-id test-m3-001 \
   --mode M3 --offline --sample-interval 1.0
 ```
 
-Para habilitar os dois Agents durante uma execução/campanha Containerlab:
+Os dois Agents são obrigatórios durante uma execução/campanha Containerlab:
 
 ```bash
-sudo DISTRIBUTED_TELEMETRY=1 ./experiments/run.sh m3
+make m3
 ```
 
 O nó `collector` participa apenas da rede de gerenciamento padrão do
@@ -227,7 +227,7 @@ gerenciamento hardcoded. Ele recebe apenas o destino `host:porta`; o roteamento
 do sistema operacional escolhe a interface de saída. Por exemplo, no testbed:
 
 ```bash
-sudo .venv/bin/pqc-agent run \
+sudo .venv/bin/pqc-agent \
   --node-id ric \
   --run-id rnp-e2-m3-001 \
   --mode M3 \
