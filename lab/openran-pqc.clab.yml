@@ -1,0 +1,25 @@
+name: openran-pqc
+
+topology:
+  defaults:
+    kind: linux
+    image: openran-pqc:6.0.7
+    cmd: sleep infinity
+    cap-add:
+      - NET_ADMIN
+      - NET_RAW
+    binds:
+      - ../traffic:/opt/openran-pqc/traffic:ro
+
+  nodes:
+    ric:
+      exec:
+        - ip address replace 10.10.0.1/30 dev eth1
+        - ip link set eth1 up
+    du:
+      exec:
+        - ip address replace 10.10.0.2/30 dev eth1
+        - ip link set eth1 up
+
+  links:
+    - endpoints: ["ric:eth1", "du:eth1"]

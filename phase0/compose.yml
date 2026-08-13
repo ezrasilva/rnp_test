@@ -1,0 +1,31 @@
+services:
+  ric:
+    build:
+      context: .
+    container_name: openran-pqc-g0-ric
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      experimental:
+        ipv4_address: 10.10.0.1
+
+  du:
+    build:
+      context: .
+    container_name: openran-pqc-g0-du
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      experimental:
+        ipv4_address: 10.10.0.2
+
+networks:
+  experimental:
+    name: openran-pqc-g0-link
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.0.0/29
+          gateway: 10.10.0.6

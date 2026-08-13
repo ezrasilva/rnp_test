@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openran-pqc-agent"
+version = "0.1.0"
+description = "Experimental observer and artifact normalizer for the OpenRAN PQC lab"
+requires-python = ">=3.11"
+
+[project.scripts]
+pqc-agent = "pqc_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
